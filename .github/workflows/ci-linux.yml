@@ -56,17 +56,25 @@ jobs:
     - name: ORM check
       run: python scripts/minimaws/minimaws.py load --executable ./${{ matrix.executable }} --softwarepath hash
       
-    - name: Prepare and Build AppImage
+- name: Prepare and Build AppImage
       run: |
-        # 1. Cria a estrutura padrão de pastas
         mkdir -p AppDir/usr/bin
         mkdir -p AppDir/usr/share/applications
         mkdir -p AppDir/usr/share/icons/hicolor/scalable/apps
         
-        # 2. Copia o executável recém-compilado
+        # 1. Copia o executável principal
         cp ${{ matrix.executable }} AppDir/usr/bin/
         
-        # 3. Cria o arquivo de atalho Desktop
+        # 2. COPIA OS COMPLEMENTOS PARA DENTRO DO APPIMAGE
+        # Isso garante que o MAME ache os filtros, traduções, documentos e plugins
+        cp -r bgfx AppDir/usr/bin/
+        cp -r language AppDir/usr/bin/
+        cp -r docs AppDir/usr/bin/
+        cp -r hash AppDir/usr/bin/
+        cp -r artwork AppDir/usr/bin/
+        cp -r plugins AppDir/usr/bin/
+        
+        # 3. Cria o atalho Desktop
         cat > AppDir/usr/share/applications/mame.desktop <<EOF
         [Desktop Entry]
         Name=MAME Tiny
@@ -76,16 +84,17 @@ jobs:
         Categories=Game;Emulator;
         EOF
         
-        # 4. (SOLUÇÃO) Em vez de baixar da web, cria localmente um ícone SVG para o AppImage
+        # 4. Cria o ícone nativamente
         echo '<svg width="256" height="256" xmlns="http://www.w3.org/2000/svg"><rect width="256" height="256" fill="#000"/><text x="128" y="128" fill="#fff" font-size="48" font-family="sans-serif" text-anchor="middle" dominant-baseline="middle">MAME</text></svg>' > AppDir/usr/share/icons/hicolor/scalable/apps/mame.svg
         
-        # 5. Baixa o linuxdeploy (sem a tag oculta, para que possamos ver erros se a rede do GitHub oscilar)
+        # 5. Baixa o linuxdeploy
         wget -O linuxdeploy-x86_64.AppImage https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
         chmod +x linuxdeploy-x86_64.AppImage
         
-        # 6. (SOLUÇÃO) Extrai e roda a ferramenta manualmente para anular o problema de "libfuse2" dos servidores Ubuntu 22.04
+        # 6. Extrai e gera o AppImage final com tudo dentro
         ./linuxdeploy-x86_64.AppImage --appimage-extract
         ./squashfs-root/AppRun --appdir AppDir -e AppDir/usr/bin/${{ matrix.executable }} -d AppDir/usr/share/applications/mame.desktop -i AppDir/usr/share/icons/hicolor/scalable/apps/mame.svg --output appimage
+        
         
     - name: Upload AppImage
       uses: actions/upload-artifact@main
