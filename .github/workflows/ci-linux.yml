@@ -1,14 +1,69 @@
-- name: Prepare and Build AppImage
+name: CI (Linux)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+    - '.github/workflows/**'
+    - '3rdparty/**'
+    - 'hash/**'
+    - 'scripts/**'
+    - 'src/**'
+    - 'COPYING'
+    - 'makefile'
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux:
+    strategy:
+      matrix:
+        compiler: [gcc]
+        include:
+          - compiler: gcc
+            cc: gcc
+            cxx: g++
+            archopts: -U_FORTIFY_SOURCE
+            subtarget: tiny
+            executable: mametiny
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@main
+      with:
+        fetch-depth: 0
+        
+    - name: Install dependencies
       run: |
-        # 1. Cria a estrutura de pastas padrão exigida para um AppImage (AppDir)
+        sudo apt-get update
+        sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev libfontconfig-dev libasound2-dev libxinerama-dev libxi-dev qt6-base-dev qt6-base-dev-tools
+        
+    - name: Build
+      env:
+        OVERRIDE_CC: ${{ matrix.cc }}
+        OVERRIDE_CXX: ${{ matrix.cxx }}
+        ARCHOPTS: ${{ matrix.archopts }}
+        SUBTARGET: ${{ matrix.subtarget }}
+        TOOLS: 1
+      run: make -j$(nproc)
+      
+    - name: Validate
+      run: ./${{ matrix.executable }} -validate
+      
+    - name: Reconcile driver list
+      run: ./${{ matrix.executable }} -listxml | python scripts/build/makedep.py reconcilelist -l src/mame/${{ matrix.subtarget }}.lst -
+      
+    - name: ORM check
+      run: python scripts/minimaws/minimaws.py load --executable ./${{ matrix.executable }} --softwarepath hash
+      
+    - name: Prepare and Build AppImage
+      run: |
         mkdir -p AppDir/usr/bin
         mkdir -p AppDir/usr/share/applications
         mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
         
-        # 2. Copia o executável recém-compilado para dentro da estrutura
         cp ${{ matrix.executable }} AppDir/usr/bin/
         
-        # 3. Cria um arquivo .desktop (atalho obrigatório para AppImages)
         cat > AppDir/usr/share/applications/mame.desktop <<EOF
         [Desktop Entry]
         Name=MAME Tiny
@@ -18,14 +73,11 @@
         Categories=Game;Emulator;
         EOF
         
-        # 4. Baixa um ícone genérico do MAME em PNG para satisfazer a criação
         wget -qO AppDir/usr/share/icons/hicolor/256x256/apps/mame.png https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/MAME_logo.svg/256px-MAME_logo.svg.png
         
-        # 5. Baixa a ferramenta linuxdeploy
         wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
         chmod +x linuxdeploy-x86_64.AppImage
         
-        # 6. Empacota tudo (usando --appimage-extract-and-run para evitar problemas de permissão FUSE no GitHub Actions)
         ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run --appdir AppDir -e AppDir/usr/bin/${{ matrix.executable }} -d AppDir/usr/share/applications/mame.desktop -i AppDir/usr/share/icons/hicolor/256x256/apps/mame.png --output appimage
         
     - name: Upload AppImage
