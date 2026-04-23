@@ -56,7 +56,7 @@ jobs:
     - name: ORM check
       run: python scripts/minimaws/minimaws.py load --executable ./${{ matrix.executable }} --softwarepath hash
       
-- name: Prepare and Build AppImage
+    - name: Prepare and Build AppImage
       run: |
         mkdir -p AppDir/usr/bin
         mkdir -p AppDir/usr/share/applications
@@ -66,13 +66,13 @@ jobs:
         cp ${{ matrix.executable }} AppDir/usr/bin/
         
         # 2. COPIA OS COMPLEMENTOS PARA DENTRO DO APPIMAGE
-        # Isso garante que o MAME ache os filtros, traduções, documentos e plugins
-        cp -r bgfx AppDir/usr/bin/
-        cp -r language AppDir/usr/bin/
-        cp -r docs AppDir/usr/bin/
-        cp -r hash AppDir/usr/bin/
-        cp -r artwork AppDir/usr/bin/
-        cp -r plugins AppDir/usr/bin/
+        # O "|| true" evita erros caso alguma pasta não exista no modo tiny
+        cp -r bgfx AppDir/usr/bin/ || true
+        cp -r language AppDir/usr/bin/ || true
+        cp -r docs AppDir/usr/bin/ || true
+        cp -r hash AppDir/usr/bin/ || true
+        cp -r artwork AppDir/usr/bin/ || true
+        cp -r plugins AppDir/usr/bin/ || true
         
         # 3. Cria o atalho Desktop
         cat > AppDir/usr/share/applications/mame.desktop <<EOF
@@ -94,7 +94,6 @@ jobs:
         # 6. Extrai e gera o AppImage final com tudo dentro
         ./linuxdeploy-x86_64.AppImage --appimage-extract
         ./squashfs-root/AppRun --appdir AppDir -e AppDir/usr/bin/${{ matrix.executable }} -d AppDir/usr/share/applications/mame.desktop -i AppDir/usr/share/icons/hicolor/scalable/apps/mame.svg --output appimage
-        
         
     - name: Upload AppImage
       uses: actions/upload-artifact@main
