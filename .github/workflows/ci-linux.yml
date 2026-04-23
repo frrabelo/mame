@@ -1,16 +1,8 @@
 name: CI (Linux)
 
 on:
+  workflow_dispatch: # <-- ISSO FAZ O BOTÃO "RUN WORKFLOW" APARECER
   push:
-    paths:
-    - '.github/workflows/**'
-    - '3rdparty/**'
-    - 'hash/**'
-    - 'scripts/**'
-    - 'src/**'
-    - 'COPYING'
-    - 'makefile'
-  pull_request:
     paths:
     - '.github/workflows/**'
     - '3rdparty/**'
@@ -27,19 +19,14 @@ jobs:
   build-linux:
     strategy:
       matrix:
-        compiler: [gcc, clang]
+        compiler: [gcc] # <-- REMOVIDO O CLANG PARA NÃO FAZER O BUILD COMPLETO DEMORADO
         include:
           - compiler: gcc
             cc: gcc
             cxx: g++
             archopts: -U_FORTIFY_SOURCE
-            subtarget: tiny
+            subtarget: tiny # <-- AQUI ESTÁ A SUA CONFIGURAÇÃO PARA COMPILAR APENAS O BÁSICO
             executable: mametiny
-          - compiler: clang
-            cc: clang
-            cxx: clang++
-            subtarget: mame
-            executable: mame
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@main
@@ -49,9 +36,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev libfontconfig-dev libasound2-dev libxinerama-dev libxi-dev qt6-base-dev qt6-base-dev-tools
-    - name: Install clang
-      if: matrix.compiler == 'clang'
-      run: sudo apt-get install -y clang
+    
     - name: Build
       env:
         OVERRIDE_CC: ${{ matrix.cc }}
@@ -59,16 +44,21 @@ jobs:
         ARCHOPTS: ${{ matrix.archopts }}
         SUBTARGET: ${{ matrix.subtarget }}
         TOOLS: 1
-      run: make -j3
+      run: make -j$(nproc) # Alterado para usar todos os núcleos disponíveis e ir mais rápido
+      
     - name: Validate
       run: ./${{ matrix.executable }} -validate
+      
+    # As etapas de validação extras foram mantidas para garantir que a compilação foi um sucesso
     - name: Reconcile driver list
       run: ./${{ matrix.executable }} -listxml | python scripts/build/makedep.py reconcilelist -l src/mame/${{ matrix.subtarget }}.lst -
+      
     - name: ORM check
       run: python scripts/minimaws/minimaws.py load --executable ./${{ matrix.executable }} --softwarepath hash
+      
     - uses: actions/upload-artifact@main
       with:
-        name: ${{ matrix.executable }}-linux-${{ matrix.compiler }}-${{ github.sha }}
+        name: ${{ matrix.executable }}-linux-${{ matrix.compiler }}-binaries
         path: |
           ${{ matrix.executable }}
           chdman
