@@ -32,7 +32,7 @@ jobs:
     - name: Instalar Dependencias (64-bit)
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential libsdl2-dev libsdl2-ttf-dev libfontconfig-dev libasound2-dev libxinerama-dev libxi-dev p7zip-full wget
+        sudo apt-get install -y build-essential libsdl2-dev libsdl2-ttf-dev libfontconfig-dev libasound2-dev libxinerama-dev libxi-dev p7zip-full wget curl
         
     - name: Compilar MAME
       run: make -j$(nproc) PTR64=1 USE_QTDEBUG=0 SUBTARGET=${SUBTARGET} TOOLS=1
@@ -85,7 +85,7 @@ jobs:
 
   build-linux-i386:
     name: Compilar 32-bits
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 # <--- Correção: Força o servidor a usar a versão 22.04
     env:
       SUBTARGET: tiny
       EXECUTABLE: mametiny
@@ -100,7 +100,7 @@ jobs:
       run: |
         sudo dpkg --add-architecture i386
         sudo apt-get update
-        sudo apt-get install -y gcc-multilib g++-multilib libsdl2-dev:i386 libsdl2-ttf-dev:i386 libfontconfig-dev:i386 libasound2-dev:i386 libxinerama-dev:i386 libxi-dev:i386 p7zip-full wget
+        sudo apt-get install -y gcc-multilib g++-multilib libsdl2-dev:i386 libsdl2-ttf-dev:i386 libfontconfig-dev:i386 libasound2-dev:i386 p7zip-full wget curl
         
     - name: Compilar MAME
       run: make -j$(nproc) PTR64=0 USE_QTDEBUG=0 ARCHOPTS="-m32 -U_FORTIFY_SOURCE" SUBTARGET=${SUBTARGET} TOOLS=1
@@ -138,7 +138,6 @@ jobs:
         
         echo '<svg width="256" height="256" xmlns="http://www.w3.org/2000/svg"><rect width="256" height="256" fill="#000"/><text x="128" y="128" fill="#fff" font-size="48" font-family="sans-serif" text-anchor="middle" dominant-baseline="middle">MAME</text></svg>' > AppDir/usr/share/icons/hicolor/scalable/apps/mame.svg
         
-        # Baixa a versão i386 exclusiva do linuxdeploy
         wget -O linuxdeploy.AppImage https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-i386.AppImage
         chmod +x linuxdeploy.AppImage
         
