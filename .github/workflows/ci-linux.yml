@@ -34,9 +34,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential libsdl2-dev libsdl2-ttf-dev libfontconfig-dev libasound2-dev libxinerama-dev libxi-dev p7zip-full wget curl
         
-- name: Compilar MAME
+    - name: Compilar MAME
       run: make -j1 PTR64=1 USE_QTDEBUG=0 SUBTARGET=${SUBTARGET} TOOLS=1
-      run: make -j1 PTR64=0 USE_QTDEBUG=0 ARCHOPTS="-m32 -U_FORTIFY_SOURCE" SUBTARGET=${SUBTARGET} TOOLS=1
       
     - name: Baixar e Integrar BGFX Shaders Oficiais
       run: |
@@ -86,7 +85,7 @@ jobs:
 
   build-linux-i386:
     name: Compilar 32-bits
-    runs-on: ubuntu-22.04 # <--- Correção: Força o servidor a usar a versão 22.04
+    runs-on: ubuntu-22.04
     env:
       SUBTARGET: tiny
       EXECUTABLE: mametiny
@@ -104,7 +103,7 @@ jobs:
         sudo apt-get install -y gcc-multilib g++-multilib libsdl2-dev:i386 libsdl2-ttf-dev:i386 libfontconfig-dev:i386 libasound2-dev:i386 p7zip-full wget curl
         
     - name: Compilar MAME
-      run: make -j$(nproc) PTR64=0 USE_QTDEBUG=0 ARCHOPTS="-m32 -U_FORTIFY_SOURCE" SUBTARGET=${SUBTARGET} TOOLS=1
+      run: make -j1 PTR64=0 USE_QTDEBUG=0 ARCHOPTS="-m32 -U_FORTIFY_SOURCE" SUBTARGET=${SUBTARGET} TOOLS=1
       
     - name: Baixar e Integrar BGFX Shaders Oficiais
       run: |
