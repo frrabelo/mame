@@ -1,4 +1,4 @@
-name: CI (Linux 64-bit e 32-bit)
+name: CI (Linux 32-bit)
 
 on:
   workflow_dispatch:
@@ -16,83 +16,6 @@ permissions:
   contents: read
 
 jobs:
-  build-linux-x86_64:
-    name: Compilar 64-bits
-    runs-on: ubuntu-latest
-    env:
-      SUBTARGET: tiny
-      EXECUTABLE: mametiny
-      PTR64: 1
-      USE_QTDEBUG: 0
-    steps:
-    - uses: actions/checkout@main
-      with:
-        fetch-depth: 0
-        
-    - name: Criar Memória Swap (Prevenir Out of Memory)
-      run: |
-        sudo swapoff -a
-        sudo rm -f /swapfile
-        sudo fallocate -l 8G /swapfile
-        sudo chmod 600 /swapfile
-        sudo mkswap /swapfile
-        sudo swapon /swapfile
-        free -h
-        
-    - name: Instalar Dependencias (64-bit)
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential libsdl2-dev libsdl2-ttf-dev libfontconfig-dev libasound2-dev libxinerama-dev libxi-dev p7zip-full wget curl
-        
-    - name: Compilar MAME
-      run: make -j2 PTR64=1 USE_QTDEBUG=0 SUBTARGET=${SUBTARGET} TOOLS=1
-      
-    - name: Baixar e Integrar BGFX Shaders Oficiais
-      run: |
-        LATEST_RELEASE=$(curl -s https://api.github.com/repos/mamedev/mame/releases/latest | grep "tag_name" | cut -d '"' -f 4)
-        wget -q https://github.com/mamedev/mame/releases/download/${LATEST_RELEASE}/mame${LATEST_RELEASE#mame}b_64bit.exe -O mame_release.exe
-        7z x mame_release.exe bgfx/ -obgfx_official/
-        rm -rf bgfx
-        mv bgfx_official/bgfx bgfx
-        
-    - name: Preparar e Empacotar AppImage
-      run: |
-        mkdir -p AppDir/usr/bin
-        mkdir -p AppDir/usr/share/applications
-        mkdir -p AppDir/usr/share/icons/hicolor/scalable/apps
-        
-        cp ${EXECUTABLE} AppDir/usr/bin/
-        cp -r bgfx AppDir/usr/bin/ || true
-        cp -r language AppDir/usr/bin/ || true
-        cp -r docs AppDir/usr/bin/ || true
-        cp -r hash AppDir/usr/bin/ || true
-        cp -r artwork AppDir/usr/bin/ || true
-        cp -r plugins AppDir/usr/bin/ || true
-        
-        cat > AppDir/usr/share/applications/mame.desktop <<EOF
-        [Desktop Entry]
-        Name=MAME Tiny (64-bit)
-        Exec=${EXECUTABLE}
-        Icon=mame
-        Type=Application
-        Categories=Game;Emulator;
-        EOF
-        
-        echo '<svg width="256" height="256" xmlns="http://www.w3.org/2000/svg"><rect width="256" height="256" fill="#000"/><text x="128" y="128" fill="#fff" font-size="48" font-family="sans-serif" text-anchor="middle" dominant-baseline="middle">MAME</text></svg>' > AppDir/usr/share/icons/hicolor/scalable/apps/mame.svg
-        
-        wget -O linuxdeploy.AppImage https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-        chmod +x linuxdeploy.AppImage
-        
-        ./linuxdeploy.AppImage --appimage-extract
-        ./squashfs-root/AppRun --appdir AppDir -e AppDir/usr/bin/${EXECUTABLE} -d AppDir/usr/share/applications/mame.desktop -i AppDir/usr/share/icons/hicolor/scalable/apps/mame.svg --output appimage
-        
-    - name: Upload AppImage 64-bit
-      uses: actions/upload-artifact@main
-      with:
-        name: MAME-Tiny-Linux-x86_64-AppImage
-        path: "*.AppImage"
-        if-no-files-found: error
-
   build-linux-i386:
     name: Compilar 32-bits
     runs-on: ubuntu-22.04
