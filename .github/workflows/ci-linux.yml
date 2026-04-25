@@ -29,13 +29,21 @@ jobs:
       with:
         fetch-depth: 0
         
+    - name: Criar Memória Swap (Prevenir Out of Memory)
+      run: |
+        sudo fallocate -l 8G /swapfile
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+        sudo swapon /swapfile
+        free -h
+        
     - name: Instalar Dependencias (64-bit)
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential libsdl2-dev libsdl2-ttf-dev libfontconfig-dev libasound2-dev libxinerama-dev libxi-dev p7zip-full wget curl
         
     - name: Compilar MAME
-      run: make -j1 PTR64=1 USE_QTDEBUG=0 SUBTARGET=${SUBTARGET} TOOLS=1
+      run: make -j2 PTR64=1 USE_QTDEBUG=0 SUBTARGET=${SUBTARGET} TOOLS=1
       
     - name: Baixar e Integrar BGFX Shaders Oficiais
       run: |
@@ -96,6 +104,14 @@ jobs:
       with:
         fetch-depth: 0
         
+    - name: Criar Memória Swap (Prevenir Out of Memory)
+      run: |
+        sudo fallocate -l 8G /swapfile
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+        sudo swapon /swapfile
+        free -h
+        
     - name: Instalar Dependencias (32-bit Cross-Compile)
       run: |
         sudo dpkg --add-architecture i386
@@ -103,7 +119,7 @@ jobs:
         sudo apt-get install -y gcc-multilib g++-multilib libsdl2-dev:i386 libsdl2-ttf-dev:i386 libfontconfig-dev:i386 libasound2-dev:i386 p7zip-full wget curl
         
     - name: Compilar MAME
-      run: make -j1 PTR64=0 USE_QTDEBUG=0 ARCHOPTS="-m32 -U_FORTIFY_SOURCE" SUBTARGET=${SUBTARGET} TOOLS=1
+      run: make -j2 PTR64=0 USE_QTDEBUG=0 ARCHOPTS="-m32 -U_FORTIFY_SOURCE" SUBTARGET=${SUBTARGET} TOOLS=1
       
     - name: Baixar e Integrar BGFX Shaders Oficiais
       run: |
