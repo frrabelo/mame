@@ -24,6 +24,8 @@ jobs:
       EXECUTABLE: mametiny
       PTR64: 0
       USE_QTDEBUG: 0
+      OVERRIDE_CC: gcc-12
+      OVERRIDE_CXX: g++-12
     steps:
     - uses: actions/checkout@main
       with:
@@ -48,11 +50,11 @@ jobs:
         sudo swapon /swapfile
         free -h
         
-    - name: Instalar Dependencias (32-bit Cross-Compile)
+    - name: Instalar Dependencias (32-bit Cross-Compile com GCC 12)
       run: |
         sudo dpkg --add-architecture i386
         sudo apt-get update
-        sudo apt-get install -y gcc-multilib g++-multilib libsdl2-dev:i386 libsdl2-ttf-dev:i386 libfontconfig-dev:i386 libasound2-dev:i386 p7zip-full wget curl
+        sudo apt-get install -y gcc-12-multilib g++-12-multilib libsdl2-dev:i386 libsdl2-ttf-dev:i386 libfontconfig-dev:i386 libasound2-dev:i386 p7zip-full wget curl
         
     - name: Compilar MAME
       run: make -j1 PTR64=0 USE_QTDEBUG=0 SYMBOLS=0 ARCHOPTS="-m32 -U_FORTIFY_SOURCE" SUBTARGET=${SUBTARGET} TOOLS=0
