@@ -25,7 +25,7 @@ jobs:
       PTR64: 0
       USE_QTDEBUG: 0
       OVERRIDE_CC: gcc-12
-      OVERRIDE_CXX: g++-12
+      OVERRIDE_CXX: "g++-12 -std=c++20"
     steps:
     - uses: actions/checkout@main
       with:
@@ -60,7 +60,7 @@ jobs:
       run: |
         echo "Nenhuma correção adicional necessária no momento."
     - name: Compilar MAME
-      run: make -j1 PTR64=0 USE_QTDEBUG=0 SYMBOLS=0 ARCHOPTS="-m32 -U_FORTIFY_SOURCE -Wno-error=restrict -Wno-error=array-bounds -Wno-error=stringop-overflow -Wno-error=stringop-overread" ARCHOPTS_CXX="-std=c++20" SUBTARGET=${SUBTARGET} TOOLS=0
+      run: make -j1 PTR64=0 USE_QTDEBUG=0 SYMBOLS=0 ARCHOPTS="-m32 -U_FORTIFY_SOURCE -Wno-error=restrict -Wno-error=array-bounds -Wno-error=stringop-overflow -Wno-error=stringop-overread" SUBTARGET=${SUBTARGET} TOOLS=0
       
     - name: Baixar e Integrar BGFX Shaders Oficiais
       run: |
