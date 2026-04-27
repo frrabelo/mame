@@ -18,14 +18,14 @@ permissions:
 jobs:
   build-linux-i386:
     name: Compilar 32-bits
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       SUBTARGET: tiny
       EXECUTABLE: mametiny
       PTR64: 0
       USE_QTDEBUG: 0
-      OVERRIDE_CC: gcc-12
-      OVERRIDE_CXX: g++-12
+      OVERRIDE_CC: gcc-13
+      OVERRIDE_CXX: g++-13
     steps:
     - uses: actions/checkout@main
       with:
@@ -50,18 +50,17 @@ jobs:
         sudo swapon /swapfile
         free -h
         
-    - name: Instalar Dependencias (32-bit Cross-Compile com GCC 12)
+    - name: Instalar Dependencias (32-bit Cross-Compile com GCC 13)
       run: |
         sudo dpkg --add-architecture i386
         sudo apt-get update
-        sudo apt-get install -y gcc-12-multilib g++-12-multilib libsdl2-dev:i386 libsdl2-ttf-dev:i386 libfontconfig-dev:i386 libasound2-dev:i386 p7zip-full wget curl
+        sudo apt-get install -y gcc-13-multilib g++-13-multilib libsdl2-dev:i386 libsdl2-ttf-dev:i386 libfontconfig-dev:i386 libasound2-dev:i386 p7zip-full wget curl
         
     - name: Corrigir Bugs no Código do MAME
       run: |
-        sed -i '1i #include <span>' src/osd/modules/input/input_common.h || true
-        
+        echo "Nenhuma correção adicional necessária no momento."
     - name: Compilar MAME
-      run: make -j1 PTR64=0 USE_QTDEBUG=0 SYMBOLS=0 ARCHOPTS="-m32 -U_FORTIFY_SOURCE -Wno-error=restrict -Wno-error=array-bounds -Wno-error=stringop-overflow -Wno-error=stringop-overread" SUBTARGET=${SUBTARGET} TOOLS=0
+      run: make -j1 PTR64=0 USE_QTDEBUG=0 SYMBOLS=0 ARCHOPTS="-m32 -std=c++20 -U_FORTIFY_SOURCE -Wno-error=restrict -Wno-error=array-bounds -Wno-error=stringop-overflow -Wno-error=stringop-overread" SUBTARGET=${SUBTARGET} TOOLS=0
       
     - name: Baixar e Integrar BGFX Shaders Oficiais
       run: |
