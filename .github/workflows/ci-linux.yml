@@ -66,7 +66,7 @@ jobs:
     - name: Baixar e Integrar BGFX Shaders Oficiais
       run: |
         LATEST_RELEASE=$(curl -s https://api.github.com/repos/mamedev/mame/releases/latest | grep "tag_name" | cut -d '"' -f 4)
-        wget -q https://github.com/mamedev/mame/releases/download/${LATEST_RELEASE}/mame${LATEST_RELEASE#mame}b_32bit.exe -O mame_release.exe || wget -q https://github.com/mamedev/mame/releases/download/${LATEST_RELEASE}/mame${LATEST_RELEASE#mame}b_64bit.exe -O mame_release.exe
+        wget -q https://github.com/mamedev/mame/releases/download/${LATEST_RELEASE}/mame${LATEST_RELEASE#mame}b_x64.exe -O mame_release.exe
         7z x mame_release.exe bgfx/ -obgfx_official/
         rm -rf bgfx
         mv bgfx_official/bgfx bgfx
