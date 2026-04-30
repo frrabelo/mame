@@ -1,0 +1,104 @@
+name: CI (Linux 64-bit)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+    - '.github/workflows/**'
+    - '3rdparty/**'
+    - 'hash/**'
+    - 'scripts/**'
+    - 'src/**'
+    - 'COPYING'
+    - 'makefile'
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux-x86_64:
+    name: Compilar 64-bits
+    runs-on: ubuntu-22.04
+    env:
+      SUBTARGET: tiny
+      EXECUTABLE: mametiny
+      PTR64: 1
+      USE_QTDEBUG: 0
+      OVERRIDE_CC: gcc-12
+      OVERRIDE_CXX: "g++-12 -std=c++20"
+    steps:
+    - uses: actions/checkout@main
+      with:
+        fetch-depth: 0
+        
+    - name: Liberar Espaço no HD
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /opt/hostedtoolcache/CodeQL
+        sudo apt-get clean
+        df -h
+        
+    - name: Criar Memória Swap
+      run: |
+        sudo swapoff -a || true
+        sudo rm -f /swapfile
+        sudo fallocate -l 8G /swapfile
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+        sudo swapon /swapfile
+        free -h
+        
+    - name: Instalar Dependencias (64-bit com GCC 12)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-12 g++-12 libsdl2-dev libsdl2-ttf-dev libfontconfig-dev libasound2-dev p7zip-full wget curl
+        
+    - name: Compilar MAME
+      run: make -j2 PTR64=1 USE_QTDEBUG=0 SYMBOLS=0 ARCHOPTS="-U_FORTIFY_SOURCE -Wno-error=restrict -Wno-error=array-bounds -Wno-error=stringop-overflow -Wno-error=stringop-overread" SUBTARGET=${SUBTARGET} TOOLS=0
+      
+    - name: Baixar e Integrar BGFX Shaders Oficiais
+      run: |
+        LATEST_RELEASE=$(curl -s https://api.github.com/repos/mamedev/mame/releases/latest | grep "tag_name" | cut -d '"' -f 4)
+        wget -q https://github.com/mamedev/mame/releases/download/${LATEST_RELEASE}/mame${LATEST_RELEASE#mame}b_x64.exe -O mame_release.exe
+        7z x mame_release.exe bgfx/ -obgfx_official/
+        rm -rf bgfx
+        mv bgfx_official/bgfx bgfx
+        
+    - name: Preparar e Empacotar AppImage
+      run: |
+        mkdir -p AppDir/usr/bin
+        mkdir -p AppDir/usr/share/applications
+        mkdir -p AppDir/usr/share/icons/hicolor/scalable/apps
+        
+        cp ${EXECUTABLE} AppDir/usr/bin/
+        cp -r bgfx AppDir/usr/bin/ || true
+        cp -r language AppDir/usr/bin/ || true
+        cp -r docs AppDir/usr/bin/ || true
+        cp -r hash AppDir/usr/bin/ || true
+        cp -r artwork AppDir/usr/bin/ || true
+        cp -r plugins AppDir/usr/bin/ || true
+        
+        cat > AppDir/usr/share/applications/mame.desktop <<EOF
+        [Desktop Entry]
+        Name=MAME Tiny (64-bit)
+        Exec=${EXECUTABLE}
+        Icon=mame
+        Type=Application
+        Categories=Game;Emulator;
+        EOF
+        
+        echo '<svg width="256" height="256" xmlns="http://www.w3.org/2000/svg"><rect width="256" height="256" fill="#000"/><text x="128" y="128" fill="#fff" font-size="48" font-family="sans-serif" text-anchor="middle" dominant-baseline="middle">MAME</text></svg>' > AppDir/usr/share/icons/hicolor/scalable/apps/mame.svg
+        
+        wget -O linuxdeploy.AppImage https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+        chmod +x linuxdeploy.AppImage
+        
+        export OUTPUT=MAME_Tiny-x86_64.AppImage
+        ./linuxdeploy.AppImage --appdir AppDir --output appimage
+        
+    - name: Upload AppImage
+      uses: actions/upload-artifact@v4
+      with:
+        name: MAME-Tiny-64bit-AppImage
+        path: MAME_Tiny-x86_64.AppImage
